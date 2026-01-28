@@ -43,7 +43,7 @@
 
     client.on('connect', () => {
       console.log('Connected to HiveMQ');
-      client.subscribe('SmartChargingSystem/ultrasonic');
+      client.subscribe('SmartChargingSystem');
     });
 
     client.on('message', (topic, message) => {
@@ -56,3 +56,4 @@
 
 </body>
 </html>
+
