@@ -22,11 +22,17 @@
       font-size: 2.5em;
       color: #00ffff;
     }
+    #status {
+      margin-top: 10px;
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
   </style>
 </head>
 <body>
 
   <h1>ESP32 Ultrasonic Sensor</h1>
+  <div id="status">Connecting...</div>
 
   <div class="card">
     <p>Distance (cm)</p>
@@ -39,18 +45,56 @@
   </div>
 
   <script>
-    const client = mqtt.connect('wss://broker.hivemq.com:8000/mqtt');
+    // ✅ RECOMMENDED: make the topic unique so nobody else on the public broker can mess with your demo
+    // Update this to match your ESP32 publisher topic.
+    const TOPIC = 'SmartChargingSystem/Group12/Demo01';
 
-    client.on('connect', () => {
-      console.log('Connected to HiveMQ');
-      client.subscribe('SmartChargingSystem');
+    // If you MUST keep the old one, use:
+    // const TOPIC = 'SmartChargingSystem';
+
+    const statusEl = document.getElementById('status');
+
+    function setStatus(text) {
+      statusEl.textContent = text;
+      console.log(text);
+    }
+
+    const client = mqtt.connect('wss://broker.hivemq.com:8000/mqtt', {
+      clientId: 'web_' + Math.random().toString(16).slice(2),
+      clean: true,
+      connectTimeout: 10000,
+      reconnectPeriod: 2000,  // auto-reconnect every 2 seconds
+      keepalive: 30,
     });
 
-    client.on('message', (topic, message) => {
-      const data = JSON.parse(message.toString());
+    client.on('connect', () => {
+      setStatus('Connected ✅');
+      client.subscribe(TOPIC, { qos: 0 }, (err) => {
+        if (err) setStatus('Subscribe error ❌ ' + err.message);
+        else setStatus('Subscribed ✅ ' + TOPIC);
+      });
+    });
 
-      document.getElementById('cm').textContent = data.cm.toFixed(2);
-      document.getElementById('inch').textContent = data.inch.toFixed(2);
+    client.on('reconnect', () => setStatus('Reconnecting...'));
+    client.on('offline', () => setStatus('Offline (waiting to reconnect)...'));
+    client.on('error', (err) => setStatus('MQTT error ❌ ' + err.message));
+
+    client.on('message', (topic, message) => {
+      let data;
+      try {
+        data = JSON.parse(message.toString());
+      } catch (e) {
+        console.warn('Bad JSON:', message.toString());
+        return;
+      }
+
+      // Only update fields if they exist and are numbers
+      if (typeof data.cm === 'number') {
+        document.getElementById('cm').textContent = data.cm.toFixed(2);
+      }
+      if (typeof data.inch === 'number') {
+        document.getElementById('inch').textContent = data.inch.toFixed(2);
+      }
     });
   </script>
 
