@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ultrasonic Distance Dashboard</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #111;
+      color: #fff;
+    }
+    .card {
+      background: #222;
+      padding: 20px;
+      margin: 20px auto;
+      width: 300px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,255,255,0.3);
+    }
+    .value {
+      font-size: 2.5em;
+      color: #00ffff;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>ESP32 Ultrasonic Sensor</h1>
+
+  <div class="card">
+    <p>Distance (cm)</p>
+    <div class="value" id="cm">--</div>
+  </div>
+
+  <div class="card">
+    <p>Distance (inch)</p>
+    <div class="value" id="inch">--</div>
+  </div>
+
+  <script>
+    const client = mqtt.connect('wss://broker.hivemq.com:8000/mqtt');
+
+    client.on('connect', () => {
+      console.log('Connected to HiveMQ');
+      client.subscribe('SmartChargingSystem/ultrasonic');
+    });
+
+    client.on('message', (topic, message) => {
+      const data = JSON.parse(message.toString());
+
+      document.getElementById('cm').textContent = data.cm.toFixed(2);
+      document.getElementById('inch').textContent = data.inch.toFixed(2);
+    });
+  </script>
+
+</body>
+</html>
